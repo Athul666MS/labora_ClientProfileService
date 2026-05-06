@@ -2,17 +2,21 @@
 Django settings for client_profile_service project.
 """
 
+import pymysql
+pymysql.version_info = (2, 2, 1, "final", 0)
+pymysql.__version__ = "2.2.1"
+pymysql.install_as_MySQLdb()
+
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-
 # --------------------------------------------------
 # BASE DIRECTORY
 # --------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load shared .env (same across all microservices)
-load_dotenv(BASE_DIR.parent / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 # --------------------------------------------------
 # SECURITY
@@ -81,13 +85,18 @@ WSGI_APPLICATION = 'client_profile_service.wsgi.application'
 # --------------------------------------------------
 # DATABASE
 # --------------------------------------------------
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'client_profiles_db'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'ATHUL123'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),  # 👈 FIX
+        'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
-
+print("DB_HOST:", os.getenv("DB_HOST"))
 # --------------------------------------------------
 # PASSWORD VALIDATION
 # --------------------------------------------------
@@ -110,6 +119,7 @@ USE_TZ = True
 # STATIC FILES
 # --------------------------------------------------
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --------------------------------------------------
 # MEDIA FILES (Client logos, documents)

@@ -89,3 +89,5 @@ def client_profile_delete(request):
         {"message": "Profile deleted successfully"},
         status=status.HTTP_204_NO_CONTENT
     )
+
+

@@ -7,7 +7,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
-
+jwt_keys/private.pem
 # Virtual environments
 .venv/
 venv/
