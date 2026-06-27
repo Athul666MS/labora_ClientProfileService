@@ -1,119 +1,77 @@
 # Client Profile Service
 
-Client Profile Service is a dedicated microservice in the **Freelancing Platform** responsible for handling all **client-specific profile management**.  
-It works independently from authentication and freelancer services and follows a **JWT-based microservice architecture**.
+Client Profile Service stores and manages client-side profile records for Labora users. It trusts Auth Service JWTs for identity and uses the JWT `user_id` as the profile owner.
 
----
+## Responsibilities
 
-## 📌 Service Responsibilities
+- Create, update, view, and delete the authenticated client's profile.
+- Store client business/profile metadata independently from Auth Service.
+- Provide a paginated internal client list for Admin Service.
 
-This service manages:
+## Features
 
-- Client personal and company details
-- Client bio, industry, and website
-- Profile image handling
-- Client verification status
-- Job posting statistics
-- Client spending summary
+- Client-only profile CRUD.
+- `user_id` is taken from the authenticated JWT during profile creation and lookup.
+- Optional profile image storage under `media/client_profiles/`.
+- Paginated internal listing ordered by newest profile.
 
-❌ This service does NOT handle:
-- User registration
-- Login or password management
-- Token generation
-- Freelancer profiles
+## API Endpoints
 
----
+Base path: `/api/`
 
-## 🧠 System Architecture
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `client/add/` | Client JWT | Create a client profile for the authenticated user. |
+| `PUT`, `PATCH` | `client/update/` | Client JWT | Partially update the authenticated user's profile. |
+| `GET` | `client/view/` | Client JWT | Return the authenticated user's profile. |
+| `DELETE` | `client/delete/` | Client JWT | Delete the authenticated user's profile. |
 
-- **Backend Framework**: Django, Django REST Framework
-- **Authentication**: JWT (issued by Auth Service)
-- **Database**: MySQL
-- **Architecture Style**: Microservices
-- **Communication**: REST APIs (JSON)
+## Internal Service Endpoints
 
-The service identifies users using `user_id` extracted from the JWT token.
+Internal endpoints use `X-Service-Key: <SERVICE_API_KEY>`.
 
----
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `internal/clients/` | Return paginated client summaries. |
 
-## 📂 Project Structure
+## Authentication
 
-Authorization: Bearer <JWT_TOKEN>
+Public profile APIs require `Authorization: Bearer <access_token>` and the token role must be `client`. JWT verification uses the shared RS256 public key.
 
-4. Client Profile Service:
-- Validates token
-- Extracts `user_id` and `role`
-- Allows access only if role = `client`
+## Environment Variables
 
----
+| Variable | Purpose |
+| --- | --- |
+| `DJANGO_SECRET_KEY` | Django secret key. |
+| `DEBUG` | Enables debug mode when set to `True`. |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | MySQL database configuration. |
+| `JWT_PUBLIC_KEY_PATH` | Public key used to verify Auth Service JWTs. |
+| `SERVICE_API_KEY` | Shared key for internal service endpoints. |
+| `*_SERVICE_URL` | Optional service URLs loaded by settings for cross-service configuration. |
 
-## 🛂 Role-Based Access Control
+## Setup
 
-| Role | Access |
-|----|------|
-| Client | Create / View / Update own profile |
-| Admin | View & verify client profiles |
-| Freelancer | ❌ No access |
-
----
-
-## 📡 API Endpoints
-
-### Client APIs
-
-| Method | Endpoint | Description |
-|------|---------|-------------|
-| POST | `/api/client/profile/` | Create client profile |
-| GET | `/api/client/profile/` | Get own profile |
-| PUT | `/api/client/profile/` | Update profile |
-
-### Admin APIs
-
-| Method | Endpoint | Description |
-|------|---------|-------------|
-| GET | `/api/client/{id}/` | View any client |
-| PATCH | `/api/client/verify/{id}/` | Verify client |
-
----
-
-## ⚙️ Environment Variables
-
-Create a `.env` file:
-
-
-
-DEBUG=True
-DJANGO_SECRET_KEY=your_secret_key
-
-DB_NAME=freelance_client
-DB_USER=root
-DB_PASSWORD=*****
-DB_HOST=localhost
-DB_PORT=3306
-
-JWT_PUBLIC_KEY_PATH=/path/to/public.pem
-
-
----
-
-## 🚀 Installation & Setup
-
-### 1️⃣ Clone Repository
 ```bash
-git clone <repository-url>
-cd client-profile-service
-
-2️⃣ Create Virtual Environment
-python -m venv venv
-source venv/bin/activate     # Linux/Mac
-venv\Scripts\activate        # Windows
-
-3️⃣ Install Dependencies
+cd ClientProfileService
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-4️⃣ Apply Migrations
-python manage.py makemigrations
 python manage.py migrate
+python manage.py runserver 8001
+```
 
-5️⃣ Run Server
-python manage.py runserver
+## Service Architecture
+
+- Django project: `client_profile_service`
+- App: `profiles`
+- Authentication: `profiles.authentication.CustomJWTAuthentication`
+- Role checks: `profiles.role_permissions.IsClient`
+- Internal service-key permission: `profiles.permissions.internal_service.IsInternalService`
+
+## Database Models
+
+- `ClientProfile`: stores `user_id`, `company_name`, `full_name`, `bio`, `location`, `profile_image`, `industry`, `website`, `total_jobs_posted`, `total_spent`, `is_verified`, and timestamps.
+
+## Notification/Event Flow
+
+This service does not emit notifications or WebSocket events.
