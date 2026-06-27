@@ -16,3 +16,13 @@ class ClientProfileViewSerializer(serializers.ModelSerializer):
         #     "total_jobs_completed",
         #     "average_rating",
         # )
+class InternalClientListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientProfile
+        fields = [
+            "user_id",
+            "full_name",
+            "company_name",
+            "is_verified",
+            "created_at",
+        ]

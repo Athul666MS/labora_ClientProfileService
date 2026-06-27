@@ -1,11 +1,19 @@
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .permissions import IsClient
-from .serializers import ClientProfileViewSerializer
+from .role_permissions import IsClient
+from .serializers import ClientProfileViewSerializer, InternalClientListSerializer
 from .models import ClientProfile
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
+from .permissions.internal_service import (
+    IsInternalService
+)
+from .models import ClientProfile
+from .serializers import ClientProfileViewSerializer
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsClient])
@@ -21,7 +29,6 @@ def client_profile_add(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        print("🔥 ERROR:", e)
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -91,3 +98,28 @@ def client_profile_delete(request):
     )
 
 
+
+class InternalClientListView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def get(self, request):
+
+        clients = ClientProfile.objects.all().order_by("-created_at")
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 20
+
+        page = paginator.paginate_queryset(
+            clients,
+            request
+        )
+
+        serializer = InternalClientListSerializer(
+            page,
+            many=True
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
